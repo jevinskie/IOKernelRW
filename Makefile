@@ -1,4 +1,5 @@
-TARGET := IOKernelRW
+KEXT_TARGET := IOKernelRW
+TEST_TARGET := test-rw-strchr
 SRC    := src
 
 # Don't use ?= with $(shell ...)
@@ -8,22 +9,27 @@ endif
 
 .PHONY: all install clean
 
-all: $(TARGET).kext/Contents/_CodeSignature/CodeResources
+all: $(KEXT_TARGET).kext/Contents/_CodeSignature/CodeResources $(TEST_TARGET)
 
-$(TARGET).kext/Contents/MacOS/$(TARGET): $(SRC)/*.cpp $(SRC)/*.h | $(TARGET).kext/Contents/MacOS
+$(KEXT_TARGET).kext/Contents/MacOS/$(KEXT_TARGET): $(SRC)/*.cpp $(SRC)/*.h | $(KEXT_TARGET).kext/Contents/MacOS
 	$(CXX) -arch arm64e -arch x86_64 -o $@ $(SRC)/*.cpp $(CXX_FLAGS)
 
-$(TARGET).kext/Contents/Info.plist: misc/Info.plist | $(TARGET).kext/Contents
+$(KEXT_TARGET).kext/Contents/Info.plist: misc/Info.plist | $(KEXT_TARGET).kext/Contents
 	cp -f $^ $@
 
-$(TARGET).kext/Contents/_CodeSignature/CodeResources: $(TARGET).kext/Contents/MacOS/$(TARGET) $(TARGET).kext/Contents/Info.plist
-	codesign -s - -f $(TARGET).kext
+$(KEXT_TARGET).kext/Contents/_CodeSignature/CodeResources: $(KEXT_TARGET).kext/Contents/MacOS/$(KEXT_TARGET) $(KEXT_TARGET).kext/Contents/Info.plist
+	codesign -s - -f $(KEXT_TARGET).kext
 
-$(TARGET).kext/Contents $(TARGET).kext/Contents/MacOS:
+$(KEXT_TARGET).kext/Contents $(KEXT_TARGET).kext/Contents/MacOS:
 	mkdir -p $@
 
+$(TEST_TARGET): test-rw-strchr.cpp test-rw-strchr-ent.xml
+	$(CXX) -o $@ test-rw-strchr.cpp -std=c++20 -arch arm64 -arch arm64e -arch x86_64 -framework IOKit -Wall -Wextra
+	codesign -s - --entitlements test-rw-strchr-ent.xml $@
+
 install: all
-	sudo cp -R $(TARGET).kext /Library/Extensions/
+	sudo cp -R $(KEXT_TARGET).kext /Library/Extensions/
 
 clean:
-	rm -rf $(TARGET).kext
+	rm -rf $(KEXT_TARGET).kext
+	rm -f $(TEST_TARGET)

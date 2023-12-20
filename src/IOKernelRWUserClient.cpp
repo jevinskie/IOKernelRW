@@ -5,6 +5,9 @@
 #include <IOKit/IOUserClient.h>
 #include <IOKit/IOMemoryDescriptor.h>
 #include "IOKernelRWUserClient.h"
+#if __has_include(<ptrauth.h>)
+#include <ptrauth.h>
+#endif
 
 #define super IOUserClient
 OSDefineMetaClassAndFinalStructors(IOKernelRWUserClient, IOUserClient)
@@ -34,6 +37,7 @@ IOReturn IOKernelRWUserClient::externalMethod(uint32_t selector, IOExternalMetho
         /* 1 */ { (IOExternalMethodAction)&IOKernelRWUserClient::writeVirt, 3, 0, 0, 0 },
         /* 2 */ { (IOExternalMethodAction)&IOKernelRWUserClient::readPhys,  4, 0, 0, 0 },
         /* 3 */ { (IOExternalMethodAction)&IOKernelRWUserClient::writePhys, 4, 0, 0, 0 },
+        /* 4 */ { (IOExternalMethodAction)&IOKernelRWUserClient::getStrchr, 2, 0, 0, 0 },
     };
 
     if(selector < sizeof(methods)/sizeof(methods[0]))
@@ -174,4 +178,19 @@ IOReturn IOKernelRWUserClient::readPhys(IOKernelRWUserClient *client, void *refe
 IOReturn IOKernelRWUserClient::writePhys(IOKernelRWUserClient *client, void *reference, IOExternalMethodArguments *args)
 {
     return physcopy(args->scalarInput[0], args->scalarInput[1], args->scalarInput[2], args->scalarInput[3], kIODirectionOut);
+}
+
+IOReturn IOKernelRWUserClient::getStrchr(IOKernelRWUserClient *client, void *reference, IOExternalMethodArguments *args)
+{
+    typedef __typeof__ (&strchr) strchr_fptr_t;
+    strchr_fptr_t strchr_fptr_signed = &strchr;
+    const void *strchr_fptr_signed_void = (const void *)strchr_fptr_signed;
+#if !__has_feature(ptrauth_calls)
+    const void *strchr_fptr_unsigned_void = (const void *)strchr_fptr_signed_void;
+#else
+    const void *strchr_fptr_unsigned_void = (const void *)ptrauth_strip(strchr_fptr_signed_void, ptrauth_key_function_pointer);
+#endif
+    int r1 = copyout((const void*)&strchr_fptr_signed_void, (user_addr_t)args->scalarInput[0], sizeof(strchr_fptr_signed_void));
+    int r2 = copyout((const void*)&strchr_fptr_unsigned_void, (user_addr_t)args->scalarInput[1], sizeof(strchr_fptr_unsigned_void));
+    return ((r1 == 0) && (r2 == 0)) ? kIOReturnSuccess : kIOReturnVMError;
 }

@@ -1,8 +1,11 @@
-#ifndef LIBIOKERNELRW_H
-#define LIBIOKERNELRW_H
+#pragma once
 
 #include <mach/mach.h>
 #include <IOKit/IOKitLib.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 static inline io_connect_t iokernelrw_open(void)
 {
@@ -46,4 +49,15 @@ static inline kern_return_t iokernelrw_write_phys(io_connect_t client, void *fro
     return IOConnectCallScalarMethod(client, 3, in, 4, NULL, NULL);
 }
 
-#endif /* LIBIOKERNELRW_H */
+static inline kern_return_t iokernelrw_get_strchr(io_connect_t client, uint64_t *strchr_signed, uint64_t *strchr_unsigned)
+{
+    if (!strchr_signed || !strchr_unsigned) {
+        return kIOReturnOverrun;
+    }
+    uint64_t in[] = { (uint64_t)strchr_signed, (uint64_t)strchr_unsigned };
+    return IOConnectCallScalarMethod(client, 4, in, 2, NULL, NULL);
+}
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
