@@ -58,6 +58,15 @@ static inline kern_return_t iokernelrw_get_strchr(io_connect_t client, uint64_t 
     return IOConnectCallScalarMethod(client, 4, in, 2, NULL, NULL);
 }
 
+static inline kern_return_t iokernelrw_get_kOSBooleanTrue(io_connect_t client, uint64_t *kOSBooleanTrue_signed, uint64_t *kOSBooleanTrue_unsigned)
+{
+    if (!kOSBooleanTrue_signed || !kOSBooleanTrue_unsigned) {
+        return kIOReturnOverrun;
+    }
+    uint64_t in[] = { (uint64_t)kOSBooleanTrue_signed, (uint64_t)kOSBooleanTrue_unsigned };
+    return IOConnectCallScalarMethod(client, 5, in, 2, NULL, NULL);
+}
+
 #ifdef __cplusplus
 } // extern "C"
 #endif

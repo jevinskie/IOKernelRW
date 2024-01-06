@@ -19,6 +19,7 @@ private:
     static IOReturn physcopy(uint64_t src, uint64_t dst, uint64_t len, uint64_t alignment, IODirection direction);
 
     static IOReturn getStrchr(IOKernelRWUserClient *client, void *reference, IOExternalMethodArguments *args);
+    static IOReturn getkOSBooleanTrue(IOKernelRWUserClient *client, void *reference, IOExternalMethodArguments *args);
 };
 
 #endif

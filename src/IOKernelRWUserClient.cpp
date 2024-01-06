@@ -38,6 +38,7 @@ IOReturn IOKernelRWUserClient::externalMethod(uint32_t selector, IOExternalMetho
         /* 2 */ { (IOExternalMethodAction)&IOKernelRWUserClient::readPhys,  4, 0, 0, 0 },
         /* 3 */ { (IOExternalMethodAction)&IOKernelRWUserClient::writePhys, 4, 0, 0, 0 },
         /* 4 */ { (IOExternalMethodAction)&IOKernelRWUserClient::getStrchr, 2, 0, 0, 0 },
+        /* 5 */ { (IOExternalMethodAction)&IOKernelRWUserClient::getkOSBooleanTrue, 2, 0, 0, 0 },
     };
 
     if(selector < sizeof(methods)/sizeof(methods[0]))
@@ -192,5 +193,20 @@ IOReturn IOKernelRWUserClient::getStrchr(IOKernelRWUserClient *client, void *ref
 #endif
     int r1 = copyout((const void*)&strchr_fptr_signed_void, (user_addr_t)args->scalarInput[0], sizeof(strchr_fptr_signed_void));
     int r2 = copyout((const void*)&strchr_fptr_unsigned_void, (user_addr_t)args->scalarInput[1], sizeof(strchr_fptr_unsigned_void));
+    return ((r1 == 0) && (r2 == 0)) ? kIOReturnSuccess : kIOReturnVMError;
+}
+
+IOReturn IOKernelRWUserClient::getkOSBooleanTrue(IOKernelRWUserClient *client, void *reference, IOExternalMethodArguments *args)
+{
+    typedef __typeof__ (&kOSBooleanTrue) kOSBooleanTrue_ptr_t;
+    kOSBooleanTrue_ptr_t kOSBooleanTrue_ptr_signed = &kOSBooleanTrue;
+    const void *kOSBooleanTrue_ptr_signed_void = (const void *)kOSBooleanTrue_ptr_signed;
+#if !__has_feature(ptrauth_calls)
+    const void *kOSBooleanTrue_ptr_unsigned_void = (const void *)kOSBooleanTrue_ptr_signed_void;
+#else
+    const void *kOSBooleanTrue_ptr_unsigned_void = (const void *)ptrauth_strip(kOSBooleanTrue_ptr_signed_void,   ptrauth_key_process_independent_data);
+#endif
+    int r1 = copyout((const void*)&kOSBooleanTrue_ptr_signed_void, (user_addr_t)args->scalarInput[0], sizeof(kOSBooleanTrue_ptr_signed_void));
+    int r2 = copyout((const void*)&kOSBooleanTrue_ptr_unsigned_void, (user_addr_t)args->scalarInput[1], sizeof(kOSBooleanTrue_ptr_unsigned_void));
     return ((r1 == 0) && (r2 == 0)) ? kIOReturnSuccess : kIOReturnVMError;
 }
